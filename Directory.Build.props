@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Company>EF Assistant</Company>
+    <Product>EF Assistant</Product>
+    <Copyright>Copyright © 2026</Copyright>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+</Project>

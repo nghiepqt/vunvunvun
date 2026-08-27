@@ -1,0 +1,25 @@
+* text=auto eol=crlf
+
+*.sh        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+
+*.cs        text diff=csharp
+*.csproj    text
+*.props     text
+*.targets   text
+*.sln       text eol=crlf
+*.slnx      text
+*.xaml      text
+*.resw      text
+*.appxmanifest text
+*.manifest  text
+
+*.png       binary
+*.ico       binary
+*.exe       binary
+*.dll       binary
+*.onnx      binary
+*.gguf      binary
+*.msix      binary
+*.pfx       binary
