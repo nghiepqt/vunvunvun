@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="EfAssistant.App.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:EfAssistant.App"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!--
+        Accessibility is a Definition of Done line on every UI ticket (CONTEXT 4.1),
+        not a later polish pass: every interactive element carries an accessible name,
+        and icon-only controls convey nothing to a screen reader without one.
+    -->
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
+        <TextBlock
+            AutomationProperties.HeadingLevel="Level1"
+            Text="{x:Bind ViewModel.Greeting, Mode=OneWay}"
+            Style="{StaticResource TitleTextBlockStyle}" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+            <Button
+                AutomationProperties.Name="Increase count"
+                ToolTipService.ToolTip="Increase count"
+                Command="{x:Bind ViewModel.IncrementCommand}">
+                <FontIcon Glyph="&#xE710;" FontSize="14" />
+            </Button>
+            <TextBlock
+                AutomationProperties.Name="Count"
+                AutomationProperties.LiveSetting="Polite"
+                Text="{x:Bind ViewModel.Counter, Mode=OneWay}"
+                VerticalAlignment="Center"
+                MinWidth="40"
+                TextAlignment="Center"
+                Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <Button
+                AutomationProperties.Name="Decrease count"
+                ToolTipService.ToolTip="Decrease count"
+                Command="{x:Bind ViewModel.DecrementCommand}">
+                <FontIcon Glyph="&#xE738;" FontSize="14" />
+            </Button>
+        </StackPanel>
+    </StackPanel>
+</Page>

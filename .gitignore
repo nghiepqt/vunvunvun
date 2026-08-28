@@ -3,11 +3,17 @@
 [Oo]bj/
 artifacts/
 [Ll]ogs/
+*.log
+*.binlog
+Generated Files/
+*_wpftmp.csproj
 
 # IDE
 .vs/
 .vscode/
 .idea/
+_ReSharper*/
+*.DotSettings.user
 *.user
 *.userosscache
 *.sln.docstates
@@ -15,20 +21,32 @@ artifacts/
 *.userprefs
 
 # MSIX / AppPackages
+# NOTE: do not ignore *.pubxml. EfAssistant.App references
+# Properties\PublishProfiles\win-$(Platform).pubxml, so publish profiles are
+# source and must be tracked.
 AppPackages/
 BundleArtifacts/
+publish/
+PublishScripts/
 Package.StoreAssociation.xml
 _pkginfo.txt
 *.msix
 *.msixbundle
 *.appx
 *.appxbundle
+*.msixupload
+*.appxupload
 
 # Code-signing material. Must never be committed.
 *.pfx
 *.p12
 *.cer
 *.snk
+
+# NuGet
+*.nupkg
+*.snupkg
+project.lock.json
 
 # Local secrets
 appsettings.*.local.json

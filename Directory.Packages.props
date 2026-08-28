@@ -12,8 +12,30 @@
     - sqlite-vec is pre-1.0 and MUST be pinned to an exact version (added in phase 01).
   -->
   <ItemGroup Label="Windows App SDK / UI">
-    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="2.4.0" />
+    <!--
+      The Microsoft.WindowsAppSDK meta-package also pulls .ML, .AI, .Search and .Widgets.
+      .ML brings Microsoft.Windows.AI.MachineLearning, which ships its own onnxruntime.dll
+      and collides in the MSIX payload with the DirectML build that CONTEXT section 5 fixes
+      as the ONNX inference stack (APPX1101). None of those four components are in the
+      product, so the SDK is composed from the components that are. .ML is reachable only
+      from the meta-package, so this keeps it out of the graph entirely.
+
+      Microsoft.WindowsAppSDK.Runtime validates that every referenced component matches the
+      version it expects, so these versions must stay exactly as Microsoft.WindowsAppSDK 2.4.0
+      declares them. Bump them together, as a set, when moving to a new SDK release.
+    -->
+    <PackageVersion Include="Microsoft.WindowsAppSDK.Base" Version="2.0.4" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK.Foundation" Version="2.3.9" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.6" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.6" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK.DWrite" Version="2.1.0" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK.Runtime" Version="2.4.0" />
     <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
+    <PackageVersion Include="Microsoft.Windows.SDK.BuildTools.WinApp" Version="0.3.1" />
+  </ItemGroup>
+
+  <ItemGroup Label="MVVM">
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
   </ItemGroup>
 
   <ItemGroup Label="Interop">

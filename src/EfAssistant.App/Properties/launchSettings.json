@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "EfAssistant.App (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "EfAssistant.App (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
