@@ -1,0 +1,20 @@
+# Words that must not appear in user-facing copy (CONTEXT.md section 6).
+# This product is cognitive scaffolding, not a medical or therapeutic product.
+# One word per line, matched case-insensitively on word boundaries.
+# Identifiers and code comments are exempt: "intervention" is fine as a class name
+# and a defect in a label, so this list is only ever applied to the localization
+# catalog and store metadata.
+treat
+treatment
+therapy
+therapeutic
+clinical
+diagnose
+diagnosis
+symptom
+patient
+intervention
+disorder
+dysregulation
+cure
+remedy

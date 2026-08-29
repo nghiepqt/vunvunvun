@@ -1,0 +1,6 @@
+# Exact string values allowed to contain an otherwise banned word, one per line.
+# Add an entry only with a note explaining why the usage is not a medical claim.
+# Matching is on the full resource value, case-insensitively.
+#
+# Example (not currently needed):
+# Treat yourself to a break   # "treat" as in reward, not medical treatment

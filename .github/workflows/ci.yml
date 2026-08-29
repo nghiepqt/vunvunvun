@@ -1,0 +1,177 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  # Cheap gates first: they need no SDK, no restore, and catch the mistakes that are
+  # easiest to make and most embarrassing to ship.
+  policy-checks:
+    name: Policy checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Banned vocabulary in user-facing copy
+        shell: pwsh
+        run: ./build/Test-BannedVocabulary.ps1
+
+      - name: Accessibility contrast
+        shell: pwsh
+        run: ./build/Test-Contrast.ps1
+
+  build-and-test:
+    name: Build and test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # global.json pins the SDK feature band, so .NET 11 previews cannot be picked up.
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/Directory.Packages.props', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore EfAssistant.slnx
+
+      - name: Build (Debug)
+        run: dotnet build EfAssistant.slnx -c Debug --no-restore
+
+      - name: Test
+        run: dotnet test EfAssistant.slnx -c Debug --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/TestResults/*.trx'
+          if-no-files-found: ignore
+
+  # Phase 00 requires both distribution channels to build: the packaged MSIX for the
+  # Store, and a self-contained unpackaged build for direct download.
+  package-msix:
+    name: Package MSIX (${{ matrix.platform }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [x64, ARM64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      # mspdbcmf.exe comes from the MSVC toolset and is what produces the .appxsym
+      # symbol package. The project resolves its location with vswhere, so the toolset
+      # only needs to be present; windows-latest ships it. Without it the build still
+      # succeeds but silently skips symbols.
+      - name: Verify MSVC toolset is present
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) { throw "vswhere.exe not found; MSIX symbol packaging will be skipped." }
+          $root = & $vswhere -latest -products * -property installationPath
+          if (-not $root) { throw "No Visual Studio installation found." }
+          $mspdbcmf = Get-ChildItem "$root\VC\Tools\MSVC" -Recurse -Filter mspdbcmf.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $mspdbcmf) { throw "mspdbcmf.exe not found under $root; install the MSVC toolset." }
+          Write-Host "Found $($mspdbcmf.FullName)"
+
+      - name: Build MSIX
+        run: >
+          dotnet build src/EfAssistant.App/EfAssistant.App.csproj
+          -c Release
+          -p:Platform=${{ matrix.platform }}
+          -p:GenerateAppxPackageOnBuild=true
+
+      # The build warns rather than fails when symbols cannot be produced, so assert
+      # the artifacts exist instead of trusting a green build.
+      - name: Verify package artifacts
+        shell: pwsh
+        run: |
+          $msix = Get-ChildItem src/EfAssistant.App/AppPackages -Recurse -Filter *.msix -ErrorAction SilentlyContinue |
+                  Where-Object { $_.Name -notlike 'Microsoft.WindowsAppRuntime*' }
+          if (-not $msix) { throw "No .msix produced." }
+          $sym = Get-ChildItem src/EfAssistant.App/AppPackages -Recurse -Filter *.appxsym -ErrorAction SilentlyContinue
+          if (-not $sym) { throw "No .appxsym symbol package produced; the MSVC toolset was not resolved." }
+          Write-Host "MSIX:    $($msix[0].Name) ($([Math]::Round($msix[0].Length / 1MB)) MB)"
+          Write-Host "Symbols: $($sym[0].Name) ($([Math]::Round($sym[0].Length / 1MB, 1)) MB)"
+
+      # runFullTrust is a restricted capability and the whole point of the phase 00
+      # Store submission. If it ever silently drops out of the manifest, fail loudly.
+      - name: Assert runFullTrust is declared
+        shell: pwsh
+        run: |
+          $manifest = Get-ChildItem src/EfAssistant.App/bin -Recurse -Filter AppxManifest.xml |
+                      Select-Object -First 1
+          if (-not $manifest) { throw "No generated AppxManifest.xml found." }
+          $xml = [xml](Get-Content $manifest.FullName -Raw)
+          $caps = $xml.GetElementsByTagName('rescap:Capability') | ForEach-Object { $_.Name }
+          if ($caps -notcontains 'runFullTrust') { throw "runFullTrust is missing from the package manifest." }
+          Write-Host "Restricted capabilities declared: $($caps -join ', ')"
+
+      - name: Upload MSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: msix-${{ matrix.platform }}
+          path: |
+            src/EfAssistant.App/AppPackages/**/*.msix
+            src/EfAssistant.App/AppPackages/**/*.appxsym
+          if-no-files-found: error
+
+  package-unpackaged:
+    name: Publish unpackaged (self-contained)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      # WindowsAppSDKSelfContained costs installer size and buys an install with no
+      # runtime prerequisite, which is the point of the direct-download channel.
+      - name: Publish
+        run: >
+          dotnet publish src/EfAssistant.App/EfAssistant.App.csproj
+          -c Release
+          -r win-x64
+          -p:Platform=x64
+          -p:WindowsPackageType=None
+          -p:WindowsAppSDKSelfContained=true
+
+      - name: Verify the runtime is actually bundled
+        shell: pwsh
+        run: |
+          $dir = "src/EfAssistant.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/publish"
+          if (-not (Test-Path "$dir/EfAssistant.App.exe")) { throw "No executable produced." }
+          foreach ($required in @('Microsoft.WindowsAppRuntime.dll', 'Microsoft.WindowsAppRuntime.Bootstrap.dll')) {
+            if (-not (Test-Path "$dir/$required")) { throw "$required missing; the build is not self-contained." }
+          }
+          $size = (Get-ChildItem $dir -Recurse -File | Measure-Object Length -Sum).Sum
+          Write-Host "Unpackaged output: $([Math]::Round($size / 1MB)) MB across $((Get-ChildItem $dir -Recurse -File).Count) files"
+
+      - name: Upload unpackaged build
+        uses: actions/upload-artifact@v4
+        with:
+          name: unpackaged-win-x64
+          path: src/EfAssistant.App/bin/Release/net10.0-windows10.0.26100.0/win-x64/publish/
+          if-no-files-found: error

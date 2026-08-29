@@ -12,6 +12,8 @@
         Accessibility is a Definition of Done line on every UI ticket (CONTEXT 4.1),
         not a later polish pass: every interactive element carries an accessible name,
         and icon-only controls convey nothing to a screen reader without one.
+        Names come from Strings\en-US\Resources.resw via x:Uid so that all user-facing
+        copy sits in the one catalog the banned-vocabulary check reads.
     -->
     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
         <TextBlock
@@ -19,24 +21,18 @@
             Text="{x:Bind ViewModel.Greeting, Mode=OneWay}"
             Style="{StaticResource TitleTextBlockStyle}" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-            <Button
-                AutomationProperties.Name="Increase count"
-                ToolTipService.ToolTip="Increase count"
-                Command="{x:Bind ViewModel.IncrementCommand}">
+            <Button x:Uid="IncrementButton" Command="{x:Bind ViewModel.IncrementCommand}">
                 <FontIcon Glyph="&#xE710;" FontSize="14" />
             </Button>
             <TextBlock
-                AutomationProperties.Name="Count"
+                x:Uid="CountText"
                 AutomationProperties.LiveSetting="Polite"
                 Text="{x:Bind ViewModel.Counter, Mode=OneWay}"
                 VerticalAlignment="Center"
                 MinWidth="40"
                 TextAlignment="Center"
                 Style="{StaticResource BodyStrongTextBlockStyle}" />
-            <Button
-                AutomationProperties.Name="Decrease count"
-                ToolTipService.ToolTip="Decrease count"
-                Command="{x:Bind ViewModel.DecrementCommand}">
+            <Button x:Uid="DecrementButton" Command="{x:Bind ViewModel.DecrementCommand}">
                 <FontIcon Glyph="&#xE738;" FontSize="14" />
             </Button>
         </StackPanel>

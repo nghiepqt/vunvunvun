@@ -1,0 +1,17 @@
+{
+  "$comment": [
+    "Foreground/background pairs the app defines itself, checked against WCAG in CI.",
+    "CONTEXT section 4.1: text at least 4.5:1, UI components at least 3:1.",
+    "'foreground' and 'background' are x:Key names of <Color> or <SolidColorBrush>",
+    "resources declared in any XAML under src/. Add a pair for every combination the",
+    "app renders, in every theme, as soon as a palette exists.",
+    "The app currently uses stock WinUI theme brushes, which Microsoft already",
+    "validates, so there is nothing app-defined to check yet."
+  ],
+  "minimumRatios": {
+    "text": 4.5,
+    "largeText": 3.0,
+    "component": 3.0
+  },
+  "pairs": []
+}
