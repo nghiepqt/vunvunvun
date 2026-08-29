@@ -80,6 +80,31 @@
     <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
   </PropertyGroup>
 
+  <!--
+    MSIX symbol package generation needs mspdbcmf.exe from the MSVC toolset. The packaging
+    targets locate it through $(VCToolsInstallDir) or $(VsInstallRoot), both of which are set
+    only inside a Developer Command Prompt. Under a plain `dotnet build` neither is set, so
+    the build warns and silently skips the .appxsym. Resolve the install root with vswhere
+    so packaging behaves the same locally and on a CI runner.
+  -->
+  <Target Name="ResolveVsInstallRootForSymbolPackaging"
+          BeforeTargets="_EnsurePdbCmfExeFullPath"
+          Condition="'$(VCToolsInstallDir)' == '' and '$(VsInstallRoot)' == '' and '$(OS)' == 'Windows_NT'">
+    <PropertyGroup>
+      <_VsWhereExe>$([System.Environment]::GetFolderPath(SpecialFolder.ProgramFilesX86))\Microsoft Visual Studio\Installer\vswhere.exe</_VsWhereExe>
+    </PropertyGroup>
+    <Exec Command="&quot;$(_VsWhereExe)&quot; -latest -products * -property installationPath"
+          Condition="Exists('$(_VsWhereExe)')"
+          ConsoleToMsBuild="true"
+          StandardOutputImportance="low"
+          ContinueOnError="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_ResolvedVsInstallRoot" />
+    </Exec>
+    <PropertyGroup Condition="'$(_ResolvedVsInstallRoot)' != ''">
+      <VsInstallRoot>$(_ResolvedVsInstallRoot.Trim())</VsInstallRoot>
+    </PropertyGroup>
+  </Target>
+
   <!-- Publish Properties -->
   <PropertyGroup>
     <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
