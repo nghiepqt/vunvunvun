@@ -228,7 +228,29 @@ def check_manifests() -> list[str]:
     if "runFullTrust" not in caps:
         errors.append("packaging/msix/AppxManifest.xml must declare runFullTrust capability")
 
-    print("[policy] Verified MSIX AppxManifest.xml (ThanhNghiepQuan.Vun, vun.exe, runFullTrust) and app.manifest.")
+    msix_dir = ROOT / "packaging" / "msix"
+    asset_refs: list[str] = []
+    for elem in appx_root.iter():
+        tag = elem.tag.split("}", 1)[-1]
+        if tag == "Logo" and elem.text and elem.text.strip():
+            asset_refs.append(elem.text.strip())
+        elif tag == "VisualElements":
+            for attr in ("Square150x150Logo", "Square44x44Logo"):
+                if val := elem.attrib.get(attr, "").strip():
+                    asset_refs.append(val)
+        elif tag == "DefaultTile":
+            if val := elem.attrib.get("Wide310x150Logo", "").strip():
+                asset_refs.append(val)
+        elif tag == "SplashScreen":
+            if val := elem.attrib.get("Image", "").strip():
+                asset_refs.append(val)
+
+    for rel_win in asset_refs:
+        asset_path = msix_dir / rel_win.replace("\\", "/")
+        if not asset_path.is_file():
+            errors.append(f"packaging/msix/AppxManifest.xml references missing asset: {rel_win}")
+
+    print("[policy] Verified MSIX AppxManifest.xml (ThanhNghiepQuan.Vun, vun.exe, runFullTrust, assets) and app.manifest.")
     return errors
 
 
