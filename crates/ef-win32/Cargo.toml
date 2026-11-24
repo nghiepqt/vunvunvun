@@ -9,8 +9,6 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-ef-core = { path = "../ef-core" }
-thiserror.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 windows = { workspace = true, features = [

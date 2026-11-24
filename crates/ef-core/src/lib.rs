@@ -11,3 +11,9 @@ pub use profile::{
     LanguageMode, MotionLevel, NudgeSettings, PlanVisibility, StepVerbosity, TaskCategory,
     TimeBufferPolicy, UserProfile,
 };
+
+/// Generates a time-sortable client identifier (`UUIDv7`) for syncable entities.
+#[must_use]
+pub fn new_entity_id() -> uuid::Uuid {
+    uuid::Uuid::now_v7()
+}

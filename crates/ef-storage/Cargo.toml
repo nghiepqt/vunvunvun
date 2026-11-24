@@ -9,6 +9,5 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-ef-core = { path = "../ef-core" }
 rusqlite.workspace = true
 thiserror.workspace = true

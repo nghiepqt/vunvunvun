@@ -2,14 +2,12 @@
 
 use ef_ai_transport::RouterDispatchToken;
 use ef_core::{CloudAiMode, UserProfile};
+use ef_prompts::{DECOMPOSE_PROMPT_V1, PromptVersion, STRUCTURE_PROMPT_V1};
 use ef_protocol::{AiTier, FeatureId, StopReason};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RouteDecision {
-    UseTier {
-        tier: AiTier,
-        output_cap: u32,
-    },
+    UseTier { tier: AiTier, output_cap: u32 },
     DeterministicFallback,
     ParkForConsent,
     SkipCall,
@@ -37,16 +35,38 @@ impl Router {
     }
 
     #[must_use]
-    pub fn decide(&self, feature: FeatureId, profile: &UserProfile, ctx: RouterContext) -> RouteDecision {
+    pub const fn prompt_version(&self, feature: FeatureId) -> Option<PromptVersion> {
+        match feature {
+            FeatureId::BraindumpStructure => Some(STRUCTURE_PROMPT_V1),
+            FeatureId::TaskDecompose => Some(DECOMPOSE_PROMPT_V1),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub fn decide(
+        &self,
+        feature: FeatureId,
+        profile: &UserProfile,
+        ctx: RouterContext,
+    ) -> RouteDecision {
         // Two strikes -> deterministic fallback, never a third attempt.
         if ctx.validation_failures >= 2 {
             return RouteDecision::DeterministicFallback;
         }
 
         let (desired_tier, output_cap) = match feature {
-            FeatureId::DeterministicTier0 => return RouteDecision::UseTier { tier: AiTier::T0, output_cap: 0 },
+            FeatureId::DeterministicTier0 => {
+                return RouteDecision::UseTier {
+                    tier: AiTier::T0,
+                    output_cap: 0,
+                };
+            }
             FeatureId::BraindumpStructure => {
-                let tier = if ctx.t1_available && ctx.input_tokens <= 800 && ctx.validation_failures == 0 {
+                let tier = if ctx.t1_available
+                    && ctx.input_tokens <= 800
+                    && ctx.validation_failures == 0
+                {
                     AiTier::T1
                 } else {
                     AiTier::T2
@@ -77,7 +97,11 @@ impl Router {
                 (tier, 250)
             }
             FeatureId::ObstaclePhrase => {
-                let tier = if ctx.t1_available { AiTier::T1 } else { AiTier::T2 };
+                let tier = if ctx.t1_available {
+                    AiTier::T1
+                } else {
+                    AiTier::T2
+                };
                 (tier, 60)
             }
             FeatureId::ObstacleInterpret => {
@@ -157,8 +181,10 @@ mod tests {
     #[test]
     fn nudge_rephrase_never_escalates_to_cloud() {
         let router = Router;
-        let mut profile = UserProfile::default();
-        profile.cloud_ai = CloudAiMode::Always;
+        let profile = UserProfile {
+            cloud_ai: CloudAiMode::Always,
+            ..Default::default()
+        };
         let ctx = RouterContext {
             t1_available: false,
             is_background_job: false,

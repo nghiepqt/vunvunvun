@@ -89,7 +89,10 @@ impl Hlc {
 
     #[must_use]
     pub fn format(&self) -> String {
-        format!("{:013}-{:010}-{}", self.last_ms, self.counter, self.device_id)
+        format!(
+            "{:013}-{:010}-{}",
+            self.last_ms, self.counter, self.device_id
+        )
     }
 }
 

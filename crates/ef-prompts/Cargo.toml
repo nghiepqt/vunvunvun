@@ -9,6 +9,5 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-ef-core = { path = "../ef-core" }
 schemars.workspace = true
 serde.workspace = true
