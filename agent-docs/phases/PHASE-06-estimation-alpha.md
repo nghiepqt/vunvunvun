@@ -4,122 +4,72 @@ Read `../CONTEXT.md` first.
 
 ## Goal
 
-Add duration estimation, which is the last MVP feature, then get the thing into real users' hands. Everything here is either the estimator or the work of shipping.
+Add pure-Rust Tier-0 duration estimation (F8), finish packaging and compliance artifacts, and ship the alpha to 10–20 target users.
 
 Estimated two weeks.
 
 ## Prerequisites
 
-Phase 05, because estimation needs tasks and steps to estimate and a workspace to display in.
+Phase 05.
 
-## Part one: duration estimation
+## Part one: Pure-Rust duration estimation (`ef-ml`)
 
-### Why this is not a model call
+### Why Tier-0 and pure Rust
 
-Language models are unreliable at numeric estimation, and a hallucinated deadline is the fastest possible way to destroy trust in a tool whose entire promise is that the user can stop holding things in their head. The language model may label a step. It may never time one.
+Language models must never invent durations or deadlines. M1 is a small LightGBM 3-head quantile regression model (p50, p80, p90) exported as a static JSON/binary tree artifact and evaluated in pure Rust inside `ef-ml` (<1 ms, zero network, zero external C++ ONNX DLL dependency for tabular trees).
 
-This is a small gradient-boosted regression model, exported to ONNX, running in-process through Microsoft.ML.OnnxRuntime. No network, no language model, under five milliseconds.
+Features: category one-hot, step word count, `is_physical`, position in plan, total steps, hour of day, day of week, optional self-reported energy level, EWMA of `actual_sec / est_sec` for this category, and prior completion count.
 
-### The model
+### Personalization without on-device tree retraining
 
-Quantile regression with three heads at the fiftieth, eightieth, and ninetieth percentiles, so the user's buffer preference selects a real trained quantile rather than applying a heuristic multiplier to a point estimate.
+1. Personal historical features fed into the frozen population trees.
+2. Empirical Bayes blend: `w = n / (n + 15.0)` blending personal category statistic with population prediction.
+3. Additive per-user quantile SGD residual correction in pure Rust, persisted in device-local `ml_state`.
 
-Features: task category as one-hot, step word count, whether the step is a physical action, position in the plan, total steps in the plan, hour of day, day of week, energy level at start once that exists, the user's exponentially weighted moving average of actual over estimated duration for this category, and the count of prior completions in this category.
+### Display & calibration
 
-Ship it as a population-level artifact trained on whatever data is available, including synthetic and hand-labelled examples. It does not need to be good at launch; it needs to exist and be calibrated honestly.
+- Always display as a range selected by `UserProfile.time_buffer_policy` (never a point estimate).
+- Countdowns and elapsed-time displays remain off by default.
+- Concrete anchors ("about as long as making coffee") allowed only when `LanguageMode::Natural`, never in `Literal`.
+- Monitor empirical p80 interval coverage (target 75–85%) and surface calibration status in settings/diagnostics.
 
-### Personalization without training
-
-OnnxRuntime is inference-only and cannot train. Personalization therefore does not happen by retraining on the user's machine. It happens three ways:
-
-1. Personal features fed into the frozen model, notably the moving average of their own estimation bias and their completion counts.
-2. Empirical Bayes blending of the frozen population prediction with a running personal statistic. Weight personal by n over n plus k, with k around fifteen, so a new user sees population priors and someone with roughly fifteen completions in a category sees mostly their own history.
-3. An additive per-user residual correction updated by quantile stochastic gradient descent after each completion. Plain C#, no machine learning runtime, stored in the device-local model state table.
-
-Do not write a ticket that assumes on-device retraining. Nothing in this stack can do it.
-
-### Display
-
-Always a range, never a point. The user's buffer preference selects which quantile is shown.
-
-Countdowns default off, because a visible countdown is a demand signal. Elapsed time is a separate toggle, also off by default, because users split on whether watching time pass activates them or panics them.
-
-Concrete anchors such as "about as long as making coffee" are allowed only when the user's language mode is natural. Under literal mode they are noise at best and confusing at worst.
-
-### Calibration monitoring
-
-Track empirical coverage of the eightieth-percentile interval. It should sit between seventy-five and eighty-five percent. Surface this in a settings or debug readout in this phase; the weekly review that would normally carry it is post-MVP.
-
-If coverage drifts outside the band, the interval is lying to the user. Widen or narrow it and say so.
-
-## Part two: alpha release
+## Part two: Alpha release
 
 ### Packaging
 
 Produce both channels from CI:
+- **MSIX (`Vun_x64.msix`, `Vun_arm64.msix`)** built via `build/Pack-Msix.ps1`: primary Microsoft Store channel ($0 Microsoft re-signing, zero SmartScreen warnings).
+- **Standalone `vun.exe`** (`x86_64-pc-windows-msvc`): unpackaged direct-download fallback (signed with OV certificate when distributing outside Store).
 
-- The MSIX package for the Store, which is the primary channel. Microsoft signs it after certification, so no certificate is needed and users see no warnings.
-- A self-contained unpackaged installer for direct download, signed with an organization-validated certificate. This channel will show SmartScreen warnings until reputation accrues; that is expected and cannot be shortcut.
+Verify clean installation on Windows 11 and Windows 10 22H2 (degraded cleanly where newer OS features are absent).
 
-Verify both install cleanly on a fresh Windows 11 machine and on Windows 10 22H2 with features degraded rather than broken.
+### Store submission & compliance
 
-### Store submission
+- Confirm `runFullTrust` approval on Partner Center (Hidden/Private Audience or Alpha flight).
+- Run `Test-BannedVocabulary.ps1` and `check_policy.py` over `i18n/*.json`, `packaging/msix/AppxManifest.xml`, Store listings, screenshots, and website copy.
+- Publish accurate privacy policy (GDPR Art. 9 local-first handling, explicit cloud consent, zero-retention provider DPA, full data export/delete including derived fragments and caches).
+- Include in-app non-medical disclaimer and static human-written crisis support resource card.
 
-The skeleton submission from phase 00 becomes the real one. Confirm `runFullTrust` approval is still in place.
+### First-run, telemetry & alpha gate
 
-The store listing and every user-facing string must pass the banned-vocabulary check. This includes the description, the screenshots' captions, and any marketing copy on a website, because they are all read as statements of what the product does.
-
-A privacy policy is required and must actually describe what happens: what is stored locally, what is sent to a model provider and under what consent, what is never transmitted, and how to export or delete everything.
-
-### First-run experience
-
-This is the highest-churn moment for these users, so treat it as a feature, not a formality.
-
-The application must be useful before it asks for anything. No permission wall, no account, no tour. Capture works on first launch.
-
-Ask for the cloud model preference at the point of first use, not up front, and explain the trade-off in one sentence without hedging. The default is to ask each time.
-
-Preference setup is optional and skippable, with sensible low-demand defaults already applied. Offer it again later rather than blocking entry.
-
-### Telemetry
-
-Off by default, opt-in, and honest about what it collects. Activity samples, nudge outcomes, and model state never leave the machine regardless of this setting.
-
-What is worth collecting when the user opts in: time from hotkey to captured item, decomposition acceptance split into accepted clean, accepted with edit, and discarded, estimation calibration, cost per user, and schema validation failure rate.
-
-What must never be collected or displayed: streaks, completion percentage as a score, comparison to other users, any productivity index.
-
-### Crash and diagnostics
-
-Structured logs to a rotating local file. A user-visible way to open the log folder and to export a diagnostic bundle they can inspect before sending. Never auto-upload anything containing task content.
-
-### Alpha gate
-
-Ten to twenty real users, recruited from the target population rather than from developers.
-
-Success criteria, measured at two weeks:
-
-- At least sixty percent still capturing in week two. This is the only metric that matters; a tool for people who struggle to start is worthless if they stop opening it.
-- Median hotkey-to-captured under five seconds.
-- Decomposition accepted without edit at least half the time.
-- Cost per active user inside the MVP budget.
-- No crash loop, no data loss, no accessibility blocker reported.
-
-If retention misses, do not add features. Find out what made them stop, because it will be friction somewhere in capture or a step that felt wrong, and both are fixable.
+- Useful immediately with zero account, tour, or permission wall—F1 capture works on launch.
+- Ask cloud preference at first cloud-eligible action (`AskEachTime` default).
+- Telemetry off by default (opt-in); never collect or display streaks, scores, peer comparisons, or productivity indices.
+- Alpha gate with 10–20 neurodivergent users at week 2:
+  - >= 60% still capturing in week 2.
+  - Median hotkey-to-captured < 5s.
+  - Decomposition accepted clean >= 50%.
+  - Cloud cost <= $2/active user/month.
+  - Zero crash loops, data loss, or accessibility blockers.
 
 ## Out of scope
 
-Everything post-MVP: retrieval over history, energy routing, stall detection, obstacle dialogue, meeting notes, weekly review, local model inference, and multi-device sync. The data layer already accommodates all of them; resist the urge to start.
+Post-MVP features: full hybrid `sqlite-vec` retrieval (F5), energy routing (F6), stall detection (F7), obstacle dialogue (F4), meeting notes (F9), weekly review (F10), local LLM shipping (Phase 3 post-MVP), multi-device sync (Phase 5 post-MVP).
 
 ## Definition of done
 
-- Estimation runs in-process, under five milliseconds, with no network and no language model, verified by a test that fails if a model call appears in the path.
-- Displayed durations are always ranges from real quantile heads.
-- Cold start uses population priors and is never blank.
-- Eightieth-percentile coverage is measured and visible.
-- Both distribution channels produce a clean install on Windows 11 and Windows 10 22H2.
-- The Store submission is accepted.
-- The banned-vocabulary check passes across application strings and store metadata.
-- A privacy policy exists and is accurate.
-- First run is useful without granting anything or creating an account.
-- Alpha is in the hands of ten to twenty target users with the retention measurement running.
+- M1 runs in-process in pure Rust under 1 ms with zero network and zero LLM calls.
+- All durations shown as ranges; p80 empirical coverage tracked.
+- MSIX and standalone `vun.exe` install and run cleanly on Windows 11 and Windows 10 22H2.
+- Store submission passes with `runFullTrust`; banned-vocabulary and contrast checks pass in CI.
+- Alpha telemetry confirms retention and latency gates with 10–20 target users.

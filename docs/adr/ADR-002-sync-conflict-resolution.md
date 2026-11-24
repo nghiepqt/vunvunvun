@@ -19,4 +19,4 @@ Key constraints:
 
 ## Consequences
 - **Positive**: Clean separation between syncable user data and machine-local runtime telemetry/caches. Eliminates merge collisions on ordered lists.
-- **Negative**: Adds op-log write amplification for local updates; requires strict encapsulation in `EfAssistant.Data.OpLog`.
+- **Negative**: Adds op-log write amplification for local updates; requires strict encapsulation in `ef_oplog::OpLog`.

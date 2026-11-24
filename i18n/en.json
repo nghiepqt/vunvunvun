@@ -1,0 +1,41 @@
+{
+  "app": {
+    "name": "Vun",
+    "tagline": "Capture a thought, and find a first step small enough to start."
+  },
+  "tray": {
+    "tooltip": "Vun — ready when you are",
+    "open_workspace": "Open workspace",
+    "capture": "Quick capture",
+    "pause_activity": "Pause activity sensing",
+    "resume_activity": "Resume activity sensing",
+    "settings": "Settings",
+    "exit": "Exit"
+  },
+  "capture": {
+    "input_label": "Capture thought",
+    "hint": "Enter saves to your inbox. Shift+Enter adds a new line. Escape closes without saving.",
+    "saved_minimal": "Saved to inbox.",
+    "voice_recording": "Listening. Speak naturally, or press Escape to cancel."
+  },
+  "nudge": {
+    "short_break": "A short break might help. Would you like a 60-second breathing timer or smaller steps?",
+    "not_now": "Not now",
+    "shrink_step": "Break this step down further"
+  },
+  "workspace": {
+    "greeting": "Foundation skeleton. Ready when you are.",
+    "blocks": {
+      "now": "Now",
+      "today": "Today",
+      "inbox": "Inbox",
+      "parked": "Parked"
+    },
+    "degraded_local_only": "Working offline with local features only. Cloud structuring is paused.",
+    "disclaimer": "Vun is a personal cognitive-scaffolding tool. It is not a medical device and does not replace professional support."
+  },
+  "settings": {
+    "countdowns_note": "Countdowns stay off by default because a visible timer can feel like pressure.",
+    "elapsed_time_note": "Elapsed time is separate from countdowns so you can choose what feels calmer."
+  }
+}

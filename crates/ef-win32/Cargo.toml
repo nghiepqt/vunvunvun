@@ -1,0 +1,22 @@
+[package]
+name = "ef-win32"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+ef-core = { path = "../ef-core" }
+thiserror.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows = { workspace = true, features = [
+    "Foundation",
+    "Storage",
+    "Win32_Foundation",
+    "Win32_System_JobObjects",
+    "Win32_UI_WindowsAndMessaging",
+] }

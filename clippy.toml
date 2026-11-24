@@ -1,0 +1,3 @@
+disallowed-types = [
+    { path = "reqwest::Client", reason = "All model and external HTTP calls must pass through ef-ai-transport via ef_ai::Router (CONTEXT.md Section 6)." },
+]

@@ -1,0 +1,27 @@
+[package]
+name = "ef-app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "vun"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+ef-ai = { path = "../ef-ai" }
+ef-core = { path = "../ef-core" }
+ef-ml = { path = "../ef-ml" }
+ef-oplog = { path = "../ef-oplog" }
+ef-prompts = { path = "../ef-prompts" }
+ef-protocol = { path = "../ef-protocol" }
+ef-sidecar = { path = "../ef-sidecar" }
+ef-storage = { path = "../ef-storage" }
+ef-win32 = { path = "../ef-win32" }
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

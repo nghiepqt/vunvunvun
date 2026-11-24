@@ -1,0 +1,16 @@
+[package]
+name = "ef-ai"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+ef-ai-transport = { path = "../ef-ai-transport" }
+ef-core = { path = "../ef-core" }
+ef-prompts = { path = "../ef-prompts" }
+ef-protocol = { path = "../ef-protocol" }
+thiserror.workspace = true

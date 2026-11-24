@@ -1,7 +1,7 @@
 # ADR-001: WinUI 3 and .NET 10 Platform Selection
 
 ## Status
-Accepted
+Superseded by [ADR-004](ADR-004-rust-and-split-surface-ui.md)
 
 ## Context
 The EF Assistant application is a native Windows desktop assistant designed for neurodivergent adults. The core requirements dictate:

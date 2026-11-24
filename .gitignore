@@ -1,29 +1,22 @@
-# Build output
-[Bb]in/
-[Oo]bj/
+# Rust / Cargo build output
+/target/
+**/*.rs.bk
 artifacts/
 [Ll]ogs/
 *.log
-*.binlog
-Generated Files/
-*_wpftmp.csproj
+
+# Frontend / WebView2 workspace tooling
+node_modules/
+ui/workspace/dist/
 
 # IDE
 .vs/
 .vscode/
 .idea/
-_ReSharper*/
-*.DotSettings.user
 *.user
-*.userosscache
-*.sln.docstates
 *.suo
-*.userprefs
 
 # MSIX / AppPackages
-# NOTE: do not ignore *.pubxml. EfAssistant.App references
-# Properties\PublishProfiles\win-$(Platform).pubxml, so publish profiles are
-# source and must be tracked.
 AppPackages/
 BundleArtifacts/
 publish/
@@ -36,6 +29,7 @@ _pkginfo.txt
 *.appxbundle
 *.msixupload
 *.appxupload
+*.appxsym
 
 # Code-signing material. Must never be committed.
 *.pfx
@@ -43,20 +37,10 @@ _pkginfo.txt
 *.cer
 *.snk
 
-# NuGet
-*.nupkg
-*.snupkg
-project.lock.json
-
 # Local secrets
 appsettings.*.local.json
 secrets.json
-
-# Test results
-TestResults/
-*.trx
-*.coverage
-*.coveragexml
+.env.local
 
 # Local SQLite databases created during development
 *.db

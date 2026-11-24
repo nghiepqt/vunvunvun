@@ -4,7 +4,7 @@ Read this file before writing any code. It is the contract. Phase files under `p
 
 ## 1. What this is
 
-A Windows desktop assistant that lowers the cost of starting, sequencing, and resuming work for neurodivergent adults (autistic, ADHD, or both). It is cognitive scaffolding, not a task manager.
+A Windows desktop assistant ("Vun") that lowers the cost of starting, sequencing, and resuming work for neurodivergent adults (autistic, ADHD, or both). It is cognitive scaffolding, not a task manager.
 
 The core loop: the user captures a thought with almost no friction, the system structures it without asking them to fill a form, it breaks the work down until the first step is trivially startable, it notices when they stall, and it reduces the demand rather than increasing the pressure.
 
@@ -87,74 +87,72 @@ Target under two US dollars per active user per month during the cloud-only MVP,
 
 ## 5. Tech stack
 
-Fixed. Do not substitute without changing this document first.
+Fixed. Do not substitute without changing this document and adding an ADR first (see `docs/adr/ADR-004-rust-and-split-surface-ui.md`).
 
-- UI: WinUI 3 on Windows App SDK 2.3.1 or later, XAML. Chosen because UI Automation is native, which is what makes the accessibility requirements achievable. Note that the 2.x line follows semantic versioning and carries breaking changes from 1.x: `Window.Current`, `DependencyObject.Dispatcher`, and `FocusManager.GetFocusedElement` are deprecated, and `SystemBackdropHost` is renamed `SystemBackdropElement`. Ignore 1.x sample code.
-- Runtime: .NET 10, which is the long-term-support release. Do not use .NET 11 while it is in preview; this is a product, not an experiment.
-- Packaging: MSIX, distributed primarily through the Microsoft Store. The Store signs the package, which removes the code-signing certificate requirement and the SmartScreen reputation problem entirely.
-- MVVM: CommunityToolkit.Mvvm with source generators.
-- UI components: Windows Community Toolkit.
-- Tray icon: H.NotifyIcon.WinUI. WinUI 3 has no built-in tray icon; this dependency is required, not optional.
-- Database: Microsoft.Data.Sqlite with SQLitePCLRaw.bundle_e_sqlite3, which includes FTS5.
-- Vector search: the sqlite-vec native extension. It is brute-force k-nearest-neighbour with no approximate index, and it is self-declared pre-1.0, so pin an exact version.
-- Win32 interop: Microsoft.Windows.CsWin32 source generator. Never hand-write P/Invoke signatures.
-- WinRT interop: CsWinRT, built into .NET.
-- ONNX inference: Microsoft.ML.OnnxRuntime, plus the DirectML package for GPU.
-- Tokenizer: Microsoft.ML.Tokenizers.
-- Local LLM: the llama.cpp `llama-server` binary bundled as a sidecar process, spoken to over localhost HTTP.
-- HTTP: HttpClient with System.Net.Http.Json.
-- Serialization: System.Text.Json with source-generated contexts. Never reflection-based.
-- Hosting and dependency injection: Microsoft.Extensions.Hosting.
-- Logging: Microsoft.Extensions.Logging with a Serilog file sink.
-- Cloud proxy: a separate ASP.NET Core minimal API service. API keys never ship to clients.
+- Language & build: **Rust (Edition 2024, stable toolchain)**, workspace organized under `crates/*` and `gateway/ef-gateway`, linked with `rust-lld` on Windows MSVC.
+- UI (Split-Surface Hybrid, Option A):
+  - **Resident overlays & tray (`ef-win32`)**: Native Win32 via Microsoft's `windows` crate (`MSFTEDIT_CLASS` RichEdit for F1 capture, native `HWND` with `WS_EX_TOOLWINDOW`/`WS_EX_NOACTIVATE` for F7 nudge, DWM Mica/Acrylic backdrop, `tray-icon` / `Shell_NotifyIconW`). Chosen for <15 ms cold wake, ~15–25 MB idle RAM, native Windows UIA (`ITextProvider`), and full Vietnamese IME compatibility (Unikey/EVKey/Windows Telex).
+  - **Main workspace & settings (`ui/workspace` via `wry` + `tao`)**: Ephemeral WebView2 window created on demand when opened and **explicitly destroyed on close to tray** (never kept resident hidden in tray). Chosen for Chromium's full UIA accessibility tree, `aria-live` support, 200% zoom, `prefers-reduced-motion`, and automated `axe-core` checks.
+- Packaging: **MSIX** (`MakeAppx.exe`, declaring `runFullTrust`), distributed primarily through the Microsoft Store. The Store re-signs the MSIX package for free ($0 individual developer account), removing the commercial code-signing certificate requirement and SmartScreen reputation problem. Direct-download fallback builds standalone `vun.exe`.
+- Database: `rusqlite` with `bundled-sqlcipher-vendored-openssl` (includes FTS5 and at-rest encryption for GDPR Art. 9).
+- Vector search: `sqlite-vec` statically linked into the Rust binary via `sqlite3_auto_extension` (`cc` in `build.rs`). Self-declared pre-1.0, brute-force KNN; pin an exact version.
+- Win32 & WinRT interop: Official `windows` crate (never hand-write raw ABI layouts when `windows` bindings exist).
+- Tier-0 ML & embeddings:
+  - M1 (Duration estimator) and M2 (Stall detector): Pure-Rust GBDT quantile evaluator over exported LightGBM trees (<1 ms in-process, zero C++ runtime).
+  - M3 (Energy-aware ranker): Pure-Rust deterministic LinUCB (`nalgebra` or fixed matrix ops).
+  - Embeddings (`multilingual-e5-small`, 384-dim): HuggingFace `tokenizers` (native Rust) + `candle` (CPU SIMD) or optional `ort` (DirectML GPU).
+- Local LLM (T1): `llama.cpp` `llama-server` binary bundled as a sidecar process under a Win32 Job Object (`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` + process memory limit), spoken to over localhost HTTP.
+- Voice transcription (F1): On-device `whisper.cpp` sidecar or quantized Whisper/PhoWhisper via `candle`/`ort`, verified on Vietnamese across Windows 10 22H2 and Windows 11.
+- Serialization & schemas: `serde` + `serde_json` + `schemars` (compile-time, zero reflection; `schemars` generates JSON Schemas for constrained decoding).
+- Async runtime & logging: `tokio` multi-thread runtime + `tracing` with rotating file appender (`tracing-appender`).
+- Cloud proxy: Separate `axum` service (`gateway/ef-gateway`) sharing wire/protocol types via `ef-protocol`. API keys never ship to clients.
 
 ## 6. Architecture invariants
 
 Break any of these and the review fails. They exist because each one was expensive to discover.
 
-**Every model call goes through the router.** `EfAssistant.Ai.Router` is the only place a model or tier is chosen. An HttpClient call to a model provider anywhere outside `EfAssistant.Gateway` or the sidecar client is a defect.
+**Every model call goes through the router.** `ef_ai::Router` is the only place a model or tier is chosen. `clippy.toml` (`disallowed-types`) forbids `reqwest::Client` outside `ef-ai-transport` and `ef-gateway`, and `ef-ai-transport` requires a `RouterDispatchToken` issued only by `ef_ai::Router`.
 
-**The model never emits a number that matters.** No dates, times, durations, deadlines, or numeric priorities in any model output schema. The model copies the user's temporal phrase verbatim into a dedicated field and a deterministic parser resolves it against the user's time zone. All durations come from the estimation model. A hallucinated deadline is the fastest way to destroy trust in a tool whose whole promise is that you can stop holding things in your head. Enforce this with a test that inspects the schema files.
+**The model never emits a number that matters.** No dates, times, durations, deadlines, or numeric priorities in any model output schema. The model copies the user's temporal phrase verbatim into a dedicated field and a deterministic parser resolves it against the user's time zone. All durations come from the estimation model. A hallucinated deadline is the fastest way to destroy trust in a tool whose whole promise is that you can stop holding things in your head. Enforce this with a unit test inspecting the `schemars` JSON schemas.
 
 **Always check `stop_reason` before trusting a structured response.** Constrained decoding makes schema violations rare, not impossible: the guarantee is void when generation hits the token cap or the model refuses. Truncation and refusal route straight to the deterministic fallback. They do not count as validation failures and do not consume the retry.
 
 **Two strikes, then fall back.** A failed validation gets exactly one retry with the error appended. A second failure returns the deterministic fallback. Never a third attempt.
 
-**Every write to a synced table goes through the op-log.** A raw INSERT or UPDATE on `task`, `note`, `inbox_item`, `user_profile`, `transcript`, or `project` outside `EfAssistant.Data.OpLog` is a defect. Device-local tables are written normally; that separation is the point.
+**Every write to a synced table goes through the op-log.** A raw `INSERT` or `UPDATE` on `task`, `note`, `inbox_item`, `user_profile`, `transcript`, or `project` outside `ef_oplog::OpLog::apply` is a defect. `ef-oplog` encapsulates `SyncWriteConn` privately so other crates cannot obtain a raw write handle for synced tables. Device-local tables are written normally through `ef-storage`.
 
-**Never auto-set `accepted_at`.** It is set only by an explicit user action. Search for it before touching anything near it.
+**Never auto-set `accepted_at`.** It is set only by an explicit user action requiring `ef_core::UserAcceptedProof` (a non-deserializable sealed token). Search for `accepted_at` before touching anything near it.
 
-**Never write to the install directory.** MSIX makes it read-only. User data and downloaded models go to `ApplicationData.Current.LocalFolder`.
+**Never write to the install directory.** MSIX makes it read-only. All paths must resolve through `ef_win32::resolve_app_paths()`, which checks `GetCurrentPackageFullName` and uses `ApplicationData::Current()?.LocalFolder()` when packaged or `%LOCALAPPDATA%\EfAssistant-Dev` when unpackaged in dev/tests.
 
 **Energy and emotional state are self-reported only.** Never inferred from typing cadence, voice, camera, calendar density, or activity patterns. The database enforces this with a check constraint; do not relax it.
 
 **Never increase demand in response to failure.** A missed task reduces scope. It never escalates urgency, and it never produces guilt copy.
 
-**Banned vocabulary in user-facing copy.** These words must not appear in app strings, store listings, or marketing: treat, treatment, therapy, therapeutic, clinical, diagnose, diagnosis, symptom, patient, intervention, disorder, dysregulation, cure, remedy. Say "a short break" not "an intervention", "helps you get started" not "treats executive dysfunction". This is checked in CI with a word-boundary regex scoped to the localization catalog and store metadata only. Identifiers and code comments are exempt, so "intervention" is fine as a class name and a defect in a label.
+**Banned vocabulary in user-facing copy.** These words must not appear in app strings, store listings, or marketing: treat, treatment, therapy, therapeutic, clinical, diagnose, diagnosis, symptom, patient, intervention, disorder, dysregulation, cure, remedy. Say "a short break" not "an intervention", "helps you get started" not "treats executive dysfunction". Checked in CI with a word-boundary regex scoped to `i18n/*.json` and `packaging/msix/AppxManifest.xml` (plus store metadata). Code identifiers and comments are exempt.
 
 ## 7. Coding standards
 
-- Nullable reference types on, warnings as errors.
-- `unsafe` and raw interop confined to the Interop and Activity projects. Prefer CsWin32-generated signatures everywhere.
-- Source-generated JSON contexts only. This keeps the ahead-of-time compilation path open and cuts startup cost.
+- Workspace lints deny all compiler warnings (`warnings = "deny"`) and `unsafe_op_in_unsafe_fn = "deny"`.
+- `#![forbid(unsafe_code)]` is required in every crate except `ef-win32`. All Win32 FFI, hooks, and raw `HWND` manipulation live inside `ef-win32`.
+- Never block the UI thread or `tokio` worker threads: Win32 `SetWinEventHook` runs on a dedicated `std::thread` with `HWND_MESSAGE` + `GetMessageW`; UIA runs on a dedicated MTA `std::thread` with a hard 250 ms `tokio::time::timeout`; SQLite writes serialize through a dedicated writer thread in WAL mode.
 - Validate every deserialized model response before it touches the database. Model output is untrusted input.
-- Never block the UI thread. Database work over roughly five milliseconds goes to `Task.Run`, and results marshal back with `DispatcherQueue.TryEnqueue`.
-- Prompts are versioned files, never inline strings. Every AI-produced row records which tier, model, and prompt version produced it, so a bad prompt version can be identified and its output reverted in bulk.
-- All user-facing copy lives in one localization catalog so the banned-vocabulary check can see it.
+- Prompts are versioned files under `crates/ef-prompts/`, never inline strings. Every AI-produced row records `origin`, `origin_model`, and `origin_prompt_ver`.
+- All user-facing copy lives in `i18n/*.json` so the banned-vocabulary check can scan it from one place.
+- All app-defined UI color tokens live in `ui/tokens/palette.json` and every foreground/background pairing is declared in `build/contrast-pairs.json`.
 - Feature flags for every AI feature, so it can be disabled per user without a release.
 - Architecture decision records under `docs/adr/` for anything that changes the stack, the model routing, or the data layer.
-- Connect the Microsoft Learn MCP server at `https://learn.microsoft.com/api/mcp` (no API key) before generating any Windows-specific code. WinUI 3 and the Windows App SDK have a large body of superseded UWP and 1.x guidance in training data, and the 2.x line deprecated `Window.Current`, `DependencyObject.Dispatcher`, and `FocusManager.GetFocusedElement`. Without live documentation access, generated code will look plausible and fail to compile, or worse, compile against a deprecated path.
 - When this document and the code disagree, stop and ask. Do not silently pick one.
 
 ## 8. Testing requirements
 
 - Prompt golden tests per version. A change that alters golden output requires a version bump.
-- A schema test asserting no date, time, duration, deadline, or numeric-estimate field exists in any model output schema. A confidence score is explicitly allowed.
+- A schema test asserting no date, time, duration, deadline, or numeric-estimate field exists in any `schemars` model output schema. A confidence score is explicitly allowed.
 - Unit tests for every output validator, including adversarial inputs.
-- Accessibility checks in CI, plus a manual NVDA and Narrator pass per release.
+- Accessibility checks (`axe-core` + contrast checks) in CI, plus a manual NVDA and Narrator pass per release.
 - A degradation suite that runs with the network off, the sidecar killed, and no model present. All must pass.
 - A twenty-four hour soak on the Win32 message-pump thread.
-- Convergence property tests for the sync layer, described in the data-layer phase.
+- Convergence property tests (`proptest`) for the sync layer, described in the data-layer phase.
 
 ## 9. Metrics
 
@@ -166,18 +164,12 @@ Never track and never display: streaks, completion percentage as a score, compar
 
 Build in this order. Each phase file states its own prerequisites, scope, explicit non-scope, and definition of done.
 
-- `phases/PHASE-00-foundation.md` - repository, project skeleton, MSIX packaging, Store onboarding, CI, and the de-risking spikes that can invalidate the plan.
-- `phases/PHASE-01-data-layer.md` - SQLite schema, migrations, the op-log, the hybrid logical clock, repositories.
-- `phases/PHASE-02-native-shell.md` - tray, global hotkey, both overlay window types, the Win32 activity monitor.
+- `phases/PHASE-00-foundation.md` - Cargo workspace, MSIX packaging, Store onboarding, CI, and the de-risking spikes that can invalidate the plan.
+- `phases/PHASE-01-data-layer.md` - SQLite/SQLCipher schema, migrations, `ef-oplog`, hybrid logical clock, repositories.
+- `phases/PHASE-02-native-shell.md` - tray, global hotkey, native Win32 F1/F7 overlays, ephemeral WebView2 lifecycle, Win32 activity monitor.
 - `phases/PHASE-03-capture.md` - F1 end to end: text, voice, and image into the inbox.
-- `phases/PHASE-04-ai-layer.md` - the tier router, cloud gateway, prompt contracts, output validators, and F2 structuring.
-- `phases/PHASE-05-decompose-ui.md` - F3 decomposition, F11 workspace, settings surface.
-- `phases/PHASE-06-estimation-alpha.md` - F8 estimation model, time display, alpha packaging and ship.
+- `phases/PHASE-04-ai-layer.md` - the tier router, `axum` cloud gateway, prompt contracts, output validators, and F2 structuring.
+- `phases/PHASE-05-decompose-ui.md` - F3 decomposition, F11 workspace, settings surface in ephemeral WebView2.
+- `phases/PHASE-06-estimation-alpha.md` - F8 pure-Rust estimation model, time display, alpha packaging and ship.
 
 Phases 00 through 02 have no dependency on any model. Do not let AI work block the foundation.
-
-## Querying Microsoft Documentation
-
-You have access to MCP tools called `microsoft_docs_search`, `microsoft_docs_fetch`, and `microsoft_code_sample_search` - these tools allow you to search through and fetch Microsoft's latest official documentation and code samples, and that information might be more detailed or newer than what's in your training data set.
-
-When handling questions around how to work with native Microsoft technologies, such as C#, F#, ASP.NET Core, Microsoft.Extensions, NuGet, Entity Framework, the `dotnet` runtime - please use these tools for research purposes when dealing with specific / narrowly defined questions that may occur.

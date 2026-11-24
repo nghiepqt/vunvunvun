@@ -1,0 +1,41 @@
+{
+  "app": {
+    "name": "Vun",
+    "tagline": "Ghi lại một ý nghĩ, và tìm bước đầu tiên đủ nhỏ để bắt đầu."
+  },
+  "tray": {
+    "tooltip": "Vun — sẵn sàng khi bạn muốn",
+    "open_workspace": "Mở không gian làm việc",
+    "capture": "Ghi nhanh",
+    "pause_activity": "Tạm dừng theo dõi ngữ cảnh",
+    "resume_activity": "Tiếp tục theo dõi ngữ cảnh",
+    "settings": "Cài đặt",
+    "exit": "Thoát"
+  },
+  "capture": {
+    "input_label": "Ô ghi nhanh ý nghĩ",
+    "hint": "Nhấn Enter để lưu vào hộp thư đến. Shift+Enter để xuống dòng. Esc để đóng.",
+    "saved_minimal": "Đã lưu vào hộp thư đến.",
+    "voice_recording": "Đang lắng nghe. Hãy nói tự nhiên, hoặc nhấn Esc để hủy."
+  },
+  "nudge": {
+    "short_break": "Một khoảng nghỉ ngắn có thể giúp ích. Bạn muốn thử bài tập thở 60 giây hay chia nhỏ bước này hơn?",
+    "not_now": "Không phải bây giờ",
+    "shrink_step": "Chia nhỏ bước này thêm"
+  },
+  "workspace": {
+    "greeting": "Khung nền tảng đã sẵn sàng khi bạn muốn.",
+    "blocks": {
+      "now": "Hiện tại",
+      "today": "Hôm nay",
+      "inbox": "Hộp thư đến",
+      "parked": "Tạm gác"
+    },
+    "degraded_local_only": "Đang chạy ngoại tuyến với các tính năng cục bộ. Phân tích đám mây đang tạm dừng.",
+    "disclaimer": "Vun là công cụ hỗ trợ nhận thức cá nhân, không phải thiết bị y tế và không thay thế hỗ trợ chuyên môn."
+  },
+  "settings": {
+    "countdowns_note": "Bộ đếm ngược tắt theo mặc định vì đồng hồ đếm ngược có thể tạo cảm giác áp lực.",
+    "elapsed_time_note": "Thời gian đã trôi qua tách biệt với đếm ngược để bạn tự chọn cách hiển thị dễ chịu nhất."
+  }
+}

@@ -1,0 +1,45 @@
+/* Default tokens aligned with ui/tokens/palette.json (standard-light) */
+:root {
+  --bg-canvas: #F8F9FA;
+  --bg-surface: #FFFFFF;
+  --text-primary: #1A1D21;
+  --text-muted: #525866;
+  --accent-primary: #1D4ED8;
+  --text-on-accent: #FFFFFF;
+  --border-subtle: #6B7280;
+  --density-gap: 1rem;
+  --motion-duration: 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration: 0ms;
+  }
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+.workspace-shell {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: var(--density-gap);
+  padding: var(--density-gap);
+}
+
+.block {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}

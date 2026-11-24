@@ -1,0 +1,51 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/ef-core",
+    "crates/ef-protocol",
+    "crates/ef-oplog",
+    "crates/ef-storage",
+    "crates/ef-prompts",
+    "crates/ef-ai-transport",
+    "crates/ef-ai",
+    "crates/ef-ml",
+    "crates/ef-sidecar",
+    "crates/ef-win32",
+    "crates/ef-app",
+    "gateway/ef-gateway",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "Proprietary"
+authors = ["Thanh Nghiep Quan"]
+
+[workspace.lints.rust]
+warnings = "deny"
+unsafe_op_in_unsafe_fn = "deny"
+
+[workspace.lints.clippy]
+disallowed_types = "deny"
+unwrap_used = "warn"
+
+[workspace.dependencies]
+axum = "0.8"
+chrono = { version = "0.4", features = ["serde"] }
+chrono-tz = "0.10"
+proptest = "1.5"
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+schemars = "0.8"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tao = "0.30"
+thiserror = "2.0"
+tokio = { version = "1.42", features = ["rt-multi-thread", "macros", "sync", "time", "process", "fs"] }
+tracing = "0.1"
+tracing-appender = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+uuid = { version = "1.11", features = ["v7", "serde"] }
+windows = "0.58"
+wry = "0.47"

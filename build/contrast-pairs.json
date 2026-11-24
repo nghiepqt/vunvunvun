@@ -1,17 +1,21 @@
 {
   "$comment": [
-    "Foreground/background pairs the app defines itself, checked against WCAG in CI.",
-    "CONTEXT section 4.1: text at least 4.5:1, UI components at least 3:1.",
-    "'foreground' and 'background' are x:Key names of <Color> or <SolidColorBrush>",
-    "resources declared in any XAML under src/. Add a pair for every combination the",
-    "app renders, in every theme, as soon as a palette exists.",
-    "The app currently uses stock WinUI theme brushes, which Microsoft already",
-    "validates, so there is nothing app-defined to check yet."
+    "Foreground/background pairs verified against WCAG 2.1 AA in CI.",
+    "CONTEXT section 4.1: text at least 4.5:1, UI components at least 3.0:1.",
+    "Evaluated across every theme in ui/tokens/palette.json."
   ],
   "minimumRatios": {
     "text": 4.5,
     "largeText": 3.0,
     "component": 3.0
   },
-  "pairs": []
+  "pairs": [
+    { "foreground": "text_primary", "background": "bg_canvas", "kind": "text" },
+    { "foreground": "text_primary", "background": "bg_surface", "kind": "text" },
+    { "foreground": "text_muted", "background": "bg_canvas", "kind": "text" },
+    { "foreground": "text_muted", "background": "bg_surface", "kind": "text" },
+    { "foreground": "accent_primary", "background": "bg_surface", "kind": "text" },
+    { "foreground": "text_on_accent", "background": "accent_primary", "kind": "text" },
+    { "foreground": "border_subtle", "background": "bg_surface", "kind": "component" }
+  ]
 }
