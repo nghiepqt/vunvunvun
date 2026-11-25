@@ -204,6 +204,46 @@ def check_cargo_architecture() -> list[str]:
     return errors
 
 
+SYNC_TABLES = (
+    "task",
+    "note",
+    "inbox_item",
+    "user_profile",
+    "transcript",
+    "project",
+    "op_log",
+)
+
+SYNC_DML_PATTERN = re.compile(
+    r"\b(?:INSERT\s+(?:OR\s+\w+\s+)?INTO|UPDATE\s+(?:OR\s+\w+\s+)?|DELETE\s+FROM)\s+"
+    r"(?:\"|\'|`)?(?:"
+    + "|".join(SYNC_TABLES)
+    + r")(?:\"|\'|`)?\b",
+    flags=re.IGNORECASE,
+)
+
+
+def check_oplog_write_isolation() -> list[str]:
+    errors: list[str] = []
+    scanned = 0
+    for search_root in (ROOT / "crates", ROOT / "gateway"):
+        if not search_root.exists():
+            continue
+        for rs_file in sorted(search_root.rglob("*.rs")):
+            rel = rs_file.relative_to(ROOT).as_posix()
+            if rel.startswith("crates/ef-oplog/"):
+                continue
+            scanned += 1
+            for lineno, raw_line in enumerate(rs_file.read_text(encoding="utf-8").splitlines(), start=1):
+                code = raw_line.split("//", 1)[0]
+                if match := SYNC_DML_PATTERN.search(code):
+                    errors.append(
+                        f"Direct DML '{match.group(0)}' on syncable table outside ef-oplog in {rel}:{lineno}"
+                    )
+    print(f"[policy] Verified op-log write isolation across {scanned} Rust source files outside ef-oplog.")
+    return errors
+
+
 def check_manifests() -> list[str]:
     errors: list[str] = []
     appx_path = ROOT / "packaging" / "msix" / "AppxManifest.xml"
@@ -259,6 +299,7 @@ def main() -> int:
     all_errors.extend(check_banned_vocabulary())
     all_errors.extend(check_contrast())
     all_errors.extend(check_cargo_architecture())
+    all_errors.extend(check_oplog_write_isolation())
     all_errors.extend(check_manifests())
 
     if all_errors:

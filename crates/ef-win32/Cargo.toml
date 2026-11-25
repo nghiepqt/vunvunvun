@@ -9,12 +9,17 @@ license.workspace = true
 workspace = true
 
 [dependencies]
+getrandom.workspace = true
+rusqlite.workspace = true
+sqlite-vec.workspace = true
+thiserror.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 windows = { workspace = true, features = [
     "Foundation",
     "Storage",
     "Win32_Foundation",
+    "Win32_Security_Credentials",
     "Win32_System_JobObjects",
     "Win32_UI_WindowsAndMessaging",
 ] }

@@ -1,5 +1,28 @@
 use thiserror::Error;
 
+/// Error returned when parsing a serialized HLC string fails.
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+pub enum HlcParseError {
+    #[error("invalid HLC format: expected `{{ms:013}}-{{counter:010}}-{{device_id}}`")]
+    InvalidFormat,
+    #[error("invalid HLC millisecond timestamp")]
+    InvalidTimestamp,
+    #[error("invalid HLC counter")]
+    InvalidCounter,
+    #[error("HLC counter {0} exceeds MAX_COUNTER")]
+    CounterOutOfRange(u32),
+    #[error("HLC device_id must not be empty")]
+    EmptyDeviceId,
+}
+
+/// Parsed components of a serialized Hybrid Logical Clock string.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParsedHlc {
+    pub ms: i64,
+    pub counter: u32,
+    pub device_id: String,
+}
+
 /// Error returned when a remote HLC timestamp exceeds the allowed clock drift bound.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 #[error("remote clock drift too large: remote_ms={remote_ms}, now_ms={now_ms}")]
@@ -94,6 +117,40 @@ impl Hlc {
             self.last_ms, self.counter, self.device_id
         )
     }
+
+    /// Parses `{ms:013}-{counter:010}-{device_id}` (supporting hyphens inside `device_id`).
+    pub fn parse(raw: &str) -> Result<ParsedHlc, HlcParseError> {
+        let mut parts = raw.splitn(3, '-');
+        let ms_str = parts.next().ok_or(HlcParseError::InvalidFormat)?;
+        let counter_str = parts.next().ok_or(HlcParseError::InvalidFormat)?;
+        let device_id = parts.next().ok_or(HlcParseError::InvalidFormat)?;
+
+        if ms_str.len() != 13 || !ms_str.bytes().all(|b| b.is_ascii_digit()) {
+            return Err(HlcParseError::InvalidTimestamp);
+        }
+        if counter_str.len() != 10 || !counter_str.bytes().all(|b| b.is_ascii_digit()) {
+            return Err(HlcParseError::InvalidCounter);
+        }
+        if device_id.is_empty() {
+            return Err(HlcParseError::EmptyDeviceId);
+        }
+
+        let ms = ms_str
+            .parse::<i64>()
+            .map_err(|_| HlcParseError::InvalidTimestamp)?;
+        let counter = counter_str
+            .parse::<u32>()
+            .map_err(|_| HlcParseError::InvalidCounter)?;
+        if counter > Self::MAX_COUNTER {
+            return Err(HlcParseError::CounterOutOfRange(counter));
+        }
+
+        Ok(ParsedHlc {
+            ms,
+            counter,
+            device_id: device_id.to_string(),
+        })
+    }
 }
 
 #[cfg(test)]
@@ -124,5 +181,36 @@ mod tests {
         let after = hlc.tick(1_700_000_000_000);
         assert!(after > before, "expected {after} > {before}");
         assert_eq!(hlc.state(), (1_700_000_000_001, 0));
+    }
+
+    #[test]
+    fn parse_round_trips_uuid_device_id_and_rejects_malformed() {
+        let hlc = Hlc::new(
+            "0193a8f0-1234-7abc-8def-0123456789ab",
+            1_700_000_000_123,
+            42,
+        );
+        let formatted = hlc.format();
+        let parsed = Hlc::parse(&formatted).expect("valid HLC");
+        assert_eq!(parsed.ms, 1_700_000_000_123);
+        assert_eq!(parsed.counter, 42);
+        assert_eq!(parsed.device_id, "0193a8f0-1234-7abc-8def-0123456789ab");
+
+        assert!(matches!(
+            Hlc::parse("bad"),
+            Err(HlcParseError::InvalidFormat)
+        ));
+        assert!(matches!(
+            Hlc::parse("123-0000000000-dev"),
+            Err(HlcParseError::InvalidTimestamp)
+        ));
+        assert!(matches!(
+            Hlc::parse("1700000000000-000-dev"),
+            Err(HlcParseError::InvalidCounter)
+        ));
+        assert!(matches!(
+            Hlc::parse("1700000000000-0000000000-"),
+            Err(HlcParseError::EmptyDeviceId)
+        ));
     }
 }

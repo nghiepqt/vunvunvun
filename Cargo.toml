@@ -31,13 +31,17 @@ unwrap_used = "warn"
 
 [workspace.dependencies]
 axum = "0.8"
+getrandom = "0.2"
 proptest = "1.5"
 reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.32", features = ["bundled-sqlcipher-vendored-openssl", "hooks"] }
 schemars = "0.8"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+sha2 = "0.10"
+sqlite-vec = "=0.1.9"
 thiserror = "2.0"
+tempfile = "3"
 tokio = { version = "1.42", features = ["rt-multi-thread", "macros", "sync", "time", "process", "fs"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }

@@ -1,6 +1,12 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+pub mod secrets;
+pub mod sqlite_vec;
+
 use std::path::PathBuf;
+
+pub use secrets::{DbKey, KeyStoreError, get_or_create_db_key};
+pub use sqlite_vec::register_sqlite_vec;
 
 /// Resolved application directories (`CONTEXT.md` Section 6).
 ///
@@ -104,5 +110,29 @@ mod tests {
         let paths = resolve_app_paths();
         assert!(!paths.local_data_dir.as_os_str().is_empty());
         assert!(paths.models_dir.starts_with(&paths.local_data_dir));
+    }
+
+    #[test]
+    fn db_key_redacts_debug_and_formats_sqlcipher_hex() {
+        let key = DbKey::from_bytes([0xab; 32]);
+        assert_eq!(format!("{key:?}"), "DbKey([REDACTED])");
+        let hex = key.to_sqlcipher_pragma_hex();
+        assert_eq!(hex.len(), 67);
+        assert!(hex.starts_with("x'abab"));
+        assert!(hex.ends_with('\''));
+    }
+
+    #[test]
+    fn sqlite_vec_registration_is_idempotent() {
+        register_sqlite_vec().expect("first sqlite-vec registration");
+        register_sqlite_vec().expect("second sqlite-vec registration");
+        let conn = rusqlite::Connection::open_in_memory().expect("open in-memory");
+        let version: String = conn
+            .query_row("SELECT vec_version()", [], |row| row.get(0))
+            .expect("query vec_version()");
+        assert!(
+            version.starts_with('v'),
+            "unexpected vec_version: {version}"
+        );
     }
 }
