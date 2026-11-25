@@ -166,6 +166,7 @@ mod tests {
         if !exited {
             let _ = child.kill();
         }
+        let _ = child.wait();
         assert!(
             exited,
             "child process should terminate when JobObject drops"

@@ -652,7 +652,7 @@ pub(crate) mod windows_overlays {
             }
             WM_COMMAND => {
                 if !ptr.is_null() {
-                    let id = (wparam.0 & 0xFFFF) as usize;
+                    let id = wparam.0 & 0xFFFF;
                     let code = u32::try_from((wparam.0 >> 16) & 0xFFFF).unwrap_or(0);
                     if code == BN_CLICKED {
                         // SAFETY: `ptr` is valid while `hwnd` lives.

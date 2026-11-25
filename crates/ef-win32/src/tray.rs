@@ -87,7 +87,12 @@ pub(crate) mod windows_tray {
         let hmodule = unsafe { windows::Win32::System::LibraryLoader::GetModuleHandleW(None) }.ok();
         if let Some(hmod) = hmodule {
             // Resource icon ID 1 (`MAKEINTRESOURCEW(1)`).
-            let res_icon = unsafe { LoadIconW(HINSTANCE(hmod.0), PCWSTR(1usize as *const u16)) };
+            let res_icon = unsafe {
+                LoadIconW(
+                    HINSTANCE(hmod.0),
+                    PCWSTR(std::ptr::without_provenance::<u16>(1)),
+                )
+            };
             if let Ok(icon) = res_icon
                 && !icon.is_invalid()
             {
