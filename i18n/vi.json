@@ -9,6 +9,7 @@
     "capture": "Ghi nhanh",
     "pause_activity": "Tạm dừng theo dõi ngữ cảnh",
     "resume_activity": "Tiếp tục theo dõi ngữ cảnh",
+    "launch_at_login": "Khởi động cùng Windows",
     "settings": "Cài đặt",
     "exit": "Thoát"
   },
@@ -19,23 +20,47 @@
     "voice_recording": "Đang lắng nghe. Hãy nói tự nhiên, hoặc nhấn Esc để hủy."
   },
   "nudge": {
+    "title": "Lời nhắc nhẹ từ Vun",
     "short_break": "Một khoảng nghỉ ngắn có thể giúp ích. Bạn muốn thử bài tập thở 60 giây hay chia nhỏ bước này hơn?",
     "not_now": "Không phải bây giờ",
-    "shrink_step": "Chia nhỏ bước này thêm"
+    "shrink_step": "Chia nhỏ bước này thêm",
+    "focus_hint": "Nhấn Tab để chuyển giữa các nút, hoặc Esc để đóng."
+  },
+  "hotkey": {
+    "capture_label": "Phím tắt ghi nhanh",
+    "nudge_label": "Phím tắt mở khóa lời nhắc",
+    "conflict_banner": "Phím tắt {binding} đang được ứng dụng khác sử dụng. Bạn có thể chọn phím tắt khác bên dưới.",
+    "rebind_action": "Cập nhật phím tắt",
+    "rebind_success": "Đã cập nhật phím tắt."
   },
   "workspace": {
-    "greeting": "Khung nền tảng đã sẵn sàng khi bạn muốn.",
+    "greeting": "Sẵn sàng khi bạn muốn.",
     "blocks": {
       "now": "Hiện tại",
       "today": "Hôm nay",
       "inbox": "Hộp thư đến",
       "parked": "Tạm gác"
     },
+    "settings_title": "Cài đặt và trạng thái hệ thống",
+    "activity_status_running": "Đang theo dõi ngữ cảnh cục bộ (chỉ tên ứng dụng và số giây nhàn rỗi, không lưu tiêu đề cửa sổ).",
+    "activity_status_paused": "Theo dõi ngữ cảnh đang tạm dừng từ khay hệ thống.",
+    "activity_status_locked": "Theo dõi ngữ cảnh tự tạm dừng khi màn hình đang khóa.",
+    "launch_at_login_label": "Khởi động Vun thu gọn ở khay hệ thống khi đăng nhập",
+    "launch_at_login_note": "Tắt theo mặc định. Bạn có thể thay đổi bất cứ lúc nào tại đây hoặc trong menu khay.",
+    "theme_label": "Giao diện màu sắc",
+    "locale_label": "Ngôn ngữ",
+    "trigger_capture": "Mở ghi nhanh",
+    "test_nudge": "Xem thử lời nhắc nhẹ",
+    "recent_activity_label": "Số mẫu ngữ cảnh gần đây đã lưu cục bộ",
     "degraded_local_only": "Đang chạy ngoại tuyến với các tính năng cục bộ. Phân tích đám mây đang tạm dừng.",
     "disclaimer": "Vun là công cụ hỗ trợ nhận thức cá nhân, không phải thiết bị y tế và không thay thế hỗ trợ chuyên môn."
   },
   "settings": {
     "countdowns_note": "Bộ đếm ngược tắt theo mặc định vì đồng hồ đếm ngược có thể tạo cảm giác áp lực.",
     "elapsed_time_note": "Thời gian đã trôi qua tách biệt với đếm ngược để bạn tự chọn cách hiển thị dễ chịu nhất."
+  },
+  "toast": {
+    "hotkey_conflict_title": "Phím tắt Vun đã được dùng",
+    "hotkey_conflict_body": "Một ứng dụng khác đang dùng {binding}. Hãy mở Cài đặt để chọn phím tắt khác."
   }
 }

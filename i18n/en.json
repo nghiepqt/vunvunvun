@@ -9,6 +9,7 @@
     "capture": "Quick capture",
     "pause_activity": "Pause activity sensing",
     "resume_activity": "Resume activity sensing",
+    "launch_at_login": "Launch at login",
     "settings": "Settings",
     "exit": "Exit"
   },
@@ -19,23 +20,47 @@
     "voice_recording": "Listening. Speak naturally, or press Escape to cancel."
   },
   "nudge": {
+    "title": "A gentle check-in from Vun",
     "short_break": "A short break might help. Would you like a 60-second breathing timer or smaller steps?",
     "not_now": "Not now",
-    "shrink_step": "Break this step down further"
+    "shrink_step": "Break this step down further",
+    "focus_hint": "Press Tab to move between actions, or Escape to close."
+  },
+  "hotkey": {
+    "capture_label": "Quick capture shortcut",
+    "nudge_label": "Focus nudge shortcut",
+    "conflict_banner": "Shortcut {binding} is already used by another app. You can choose a different one below.",
+    "rebind_action": "Update shortcut",
+    "rebind_success": "Shortcut updated."
   },
   "workspace": {
-    "greeting": "Foundation skeleton. Ready when you are.",
+    "greeting": "Ready when you are.",
     "blocks": {
       "now": "Now",
       "today": "Today",
       "inbox": "Inbox",
       "parked": "Parked"
     },
+    "settings_title": "Settings and shell status",
+    "activity_status_running": "Activity sensing is active (app name and idle seconds only, never window titles).",
+    "activity_status_paused": "Activity sensing is paused from the tray.",
+    "activity_status_locked": "Activity sensing is paused while your screen is locked.",
+    "launch_at_login_label": "Start Vun minimized when you sign in",
+    "launch_at_login_note": "Off by default. You can change this anytime here or in the tray menu.",
+    "theme_label": "Appearance theme",
+    "locale_label": "Language",
+    "trigger_capture": "Open quick capture",
+    "test_nudge": "Preview gentle check-in",
+    "recent_activity_label": "Recent activity samples recorded locally",
     "degraded_local_only": "Working offline with local features only. Cloud structuring is paused.",
     "disclaimer": "Vun is a personal cognitive-scaffolding tool. It is not a medical device and does not replace professional support."
   },
   "settings": {
     "countdowns_note": "Countdowns stay off by default because a visible timer can feel like pressure.",
     "elapsed_time_note": "Elapsed time is separate from countdowns so you can choose what feels calmer."
+  },
+  "toast": {
+    "hotkey_conflict_title": "Vun shortcut already in use",
+    "hotkey_conflict_body": "Another app is using {binding}. Open Settings to pick another shortcut."
   }
 }

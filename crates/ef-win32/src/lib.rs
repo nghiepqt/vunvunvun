@@ -1,12 +1,51 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+pub mod activity;
+pub mod dpi;
+pub mod error;
+pub mod hotkey;
+pub mod job_object;
+pub mod overlays;
+pub mod palette;
 pub mod secrets;
+pub mod shell;
+pub mod single_instance;
 pub mod sqlite_vec;
+pub mod startup;
+pub mod toast;
+pub mod tray;
 
 use std::path::PathBuf;
 
+pub use activity::{
+    ACTIVITY_EVENT_CHANNEL_CAPACITY, ActivityEvent, ActivityMonitor, ActivityStatsSnapshot,
+    ProcessDiagnostics, SamplingPolicy, UIA_TIMEOUT, compute_idle_seconds,
+    current_foreground_process_name, current_idle_seconds, current_unix_ms,
+    extract_process_basename, process_diagnostics,
+};
+pub use dpi::{
+    MonitorInfo, ScreenRect, compute_capture_rect, compute_nudge_rect, monitor_for_cursor,
+    scale_dip,
+};
+pub use error::Win32Error;
+pub use hotkey::{HotkeyBinding, HotkeyKind, HotkeyRegistrationResult};
+pub use job_object::JobObject;
+pub use palette::{
+    OverlayColors, RgbColor, ThemeId, is_high_contrast_enabled, is_system_dark_mode,
+    load_theme_colors,
+};
 pub use secrets::{DbKey, KeyStoreError, get_or_create_db_key};
+pub use shell::{
+    NativeShell, NativeShellConfig, SHELL_EVENT_CHANNEL_CAPACITY, ShellCommand, ShellEvent,
+};
+pub use single_instance::{
+    DEFAULT_SINGLE_INSTANCE_MUTEX, DEFAULT_WAKEUP_MESSAGE_NAME, DEFAULT_WAKEUP_WINDOW_CLASS,
+    SingleInstanceGuard, SingleInstanceOutcome,
+};
 pub use sqlite_vec::register_sqlite_vec;
+pub use startup::{LaunchAtLoginState, get_launch_at_login, set_launch_at_login};
+pub use toast::{ToastResult, build_toast_xml, escape_xml, show_toast_best_effort};
+pub use tray::ShellCopy;
 
 /// Resolved application directories (`CONTEXT.md` Section 6).
 ///

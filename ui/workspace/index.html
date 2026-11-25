@@ -6,21 +6,139 @@
     <title>Vun Workspace</title>
     <link rel="stylesheet" href="./src/styles/tokens.css" />
   </head>
-  <body>
+  <body data-theme="standard-light">
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1 id="app-title">Vun</h1>
+        <p id="app-greeting" aria-live="polite">Ready when you are.</p>
+      </div>
+      <nav class="topbar-actions" aria-label="Workspace actions">
+        <button id="btn-quick-capture" type="button" class="btn btn-primary">
+          Open quick capture
+        </button>
+        <button id="btn-test-nudge" type="button" class="btn btn-secondary">
+          Preview gentle check-in
+        </button>
+      </nav>
+    </header>
+
+    <div
+      id="hotkey-conflict-banner"
+      class="banner banner-info"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+
+    <div
+      id="status-announcement"
+      class="sr-status"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+
     <main id="workspace-root" class="workspace-shell" aria-label="Vun Workspace">
       <section class="block block-now" aria-labelledby="heading-now">
         <h2 id="heading-now">Now</h2>
         <p id="status-line" aria-live="polite">Ready when you are.</p>
+        <p id="capture-summary" class="muted-text"></p>
       </section>
+
       <section class="block block-today" aria-labelledby="heading-today">
         <h2 id="heading-today">Today</h2>
+        <p id="degraded-note" class="muted-text">
+          Working offline with local features only. Cloud structuring is paused.
+        </p>
       </section>
+
       <section class="block block-inbox" aria-labelledby="heading-inbox">
         <h2 id="heading-inbox">Inbox</h2>
+        <p id="inbox-stub-note" class="muted-text"></p>
       </section>
+
       <section class="block block-parked" aria-labelledby="heading-parked">
         <h2 id="heading-parked">Parked</h2>
+        <p id="disclaimer-note" class="muted-text"></p>
       </section>
     </main>
+
+    <section
+      id="settings-panel"
+      class="settings-panel"
+      aria-labelledby="heading-settings"
+    >
+      <h2 id="heading-settings">Settings and shell status</h2>
+
+      <div class="settings-grid">
+        <div class="setting-card">
+          <h3 id="label-activity-heading">Activity sensing</h3>
+          <p id="activity-status-text" class="muted-text"></p>
+          <button id="btn-toggle-activity" type="button" class="btn btn-secondary">
+            Pause activity sensing
+          </button>
+          <p id="recent-activity-label" class="muted-text"></p>
+          <ul id="recent-activity-list" class="activity-list"></ul>
+        </div>
+
+        <div class="setting-card">
+          <h3 id="label-startup-heading">Startup and appearance</h3>
+          <label class="checkbox-row" for="chk-launch-at-login">
+            <input id="chk-launch-at-login" type="checkbox" />
+            <span id="label-launch-at-login">Start Vun minimized when you sign in</span>
+          </label>
+          <p id="note-launch-at-login" class="muted-text"></p>
+
+          <div class="field-row">
+            <label id="label-theme" for="select-theme">Appearance theme</label>
+            <select id="select-theme">
+              <option value="standard-light">Standard Light</option>
+              <option value="standard-dark">Standard Dark</option>
+              <option value="muted-light">Muted Light</option>
+              <option value="muted-dark">Muted Dark</option>
+            </select>
+          </div>
+
+          <div class="field-row">
+            <label id="label-locale" for="select-locale">Language</label>
+            <select id="select-locale">
+              <option value="en">English</option>
+              <option value="vi">Tiếng Việt</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <h3 id="label-hotkey-heading">Global shortcuts</h3>
+          <form id="form-capture-hotkey" class="hotkey-form">
+            <label id="label-capture-hotkey" for="input-capture-hotkey">
+              Quick capture shortcut
+            </label>
+            <div class="hotkey-input-row">
+              <input id="input-capture-hotkey" type="text" value="Ctrl+Shift+Space" />
+              <button id="btn-rebind-capture" type="submit" class="btn btn-secondary">
+                Update shortcut
+              </button>
+            </div>
+          </form>
+
+          <form id="form-nudge-hotkey" class="hotkey-form">
+            <label id="label-nudge-hotkey" for="input-nudge-hotkey">
+              Focus nudge shortcut
+            </label>
+            <div class="hotkey-input-row">
+              <input id="input-nudge-hotkey" type="text" value="Ctrl+Alt+Shift+N" />
+              <button id="btn-rebind-nudge" type="submit" class="btn btn-secondary">
+                Update shortcut
+              </button>
+            </div>
+          </form>
+
+          <p id="note-countdowns" class="muted-text"></p>
+        </div>
+      </div>
+    </section>
+
+    <script src="./src/app.js"></script>
   </body>
 </html>
