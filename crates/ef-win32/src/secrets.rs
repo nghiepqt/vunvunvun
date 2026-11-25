@@ -111,7 +111,7 @@ mod windows_cred {
             CredReadW(
                 PCWSTR::from_raw(target_w.as_ptr()),
                 CRED_TYPE_GENERIC,
-                None,
+                0,
                 &mut cred_ptr,
             )
         };
@@ -119,7 +119,7 @@ mod windows_cred {
         match read_res {
             Ok(()) => {
                 // SAFETY: `CredReadW` succeeded so `cred_ptr` is non-null and valid until `CredFree`.
-                let key_result = unsafe {
+                unsafe {
                     let cred = &*cred_ptr;
                     let len = cred.CredentialBlobSize as usize;
                     let result = if len == 32 && !cred.CredentialBlob.is_null() {
@@ -132,8 +132,7 @@ mod windows_cred {
                     };
                     CredFree(cred_ptr.cast::<c_void>());
                     result
-                };
-                key_result
+                }
             }
             Err(err) if err.code() == ERROR_NOT_FOUND.to_hresult() => {
                 let new_key = DbKey::generate()?;
