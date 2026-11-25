@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
+use std::fmt::Write as _;
 
 use serde::{Deserialize, Serialize};
+use sha2::{Digest as _, Sha256};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -215,6 +217,50 @@ impl UserProfile {
         };
         format!("{demand}-{lang}-{verbosity}")
     }
+
+    /// Computes a deterministic SHA-256 hex digest over prompt-affecting preferences (ADR-003).
+    ///
+    /// UI-only settings (such as `density`, `color_intensity`, `motion`) do not alter
+    /// `profile_hash`, preserving prompt cache hits across cosmetic UI tweaks.
+    #[must_use]
+    pub fn profile_hash(&self) -> String {
+        #[derive(Serialize)]
+        struct PromptProfileSlice<'a> {
+            schema_version: u32,
+            demand_style: DemandStyle,
+            language_mode: LanguageMode,
+            affect: Affect,
+            step_verbosity: StepVerbosity,
+            default_granularity: &'a BTreeMap<TaskCategory, u8>,
+            require_physical_first_step: bool,
+            novelty_preference: u8,
+            anchoring_enabled: bool,
+            ef_challenges: &'a [EfChallenge],
+            interests: &'a [String],
+        }
+
+        let slice = PromptProfileSlice {
+            schema_version: self.schema_version,
+            demand_style: self.demand_style,
+            language_mode: self.language_mode,
+            affect: self.affect,
+            step_verbosity: self.step_verbosity,
+            default_granularity: &self.default_granularity,
+            require_physical_first_step: self.require_physical_first_step,
+            novelty_preference: self.novelty_preference,
+            anchoring_enabled: self.anchoring_enabled,
+            ef_challenges: &self.ef_challenges,
+            interests: &self.interests,
+        };
+
+        let bytes = serde_json::to_vec(&slice).unwrap_or_default();
+        let digest = Sha256::digest(&bytes);
+        let mut hex = String::with_capacity(64);
+        for byte in digest {
+            let _ = write!(hex, "{byte:02x}");
+        }
+        hex
+    }
 }
 
 #[cfg(test)]
@@ -229,5 +275,19 @@ mod tests {
         assert_eq!(profile.novelty_preference, 50);
         assert!(!profile.telemetry);
         assert_eq!(profile.cluster_id(), "invitational-natural-normal");
+    }
+
+    #[test]
+    fn profile_hash_ignores_ui_only_changes_and_tracks_prompt_preferences() {
+        let base = UserProfile::default();
+        let mut ui_only = base.clone();
+        ui_only.density = Density::Compact;
+        ui_only.color_intensity = ColorIntensity::Muted;
+        assert_eq!(base.profile_hash(), ui_only.profile_hash());
+
+        let mut prompt_changed = base.clone();
+        prompt_changed.demand_style = DemandStyle::Direct;
+        assert_ne!(base.profile_hash(), prompt_changed.profile_hash());
+        assert_eq!(base.profile_hash().len(), 64);
     }
 }
