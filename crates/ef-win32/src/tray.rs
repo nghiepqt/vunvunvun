@@ -55,7 +55,7 @@ pub(crate) mod menu_ids {
 
 #[cfg(windows)]
 pub(crate) mod windows_tray {
-    use windows::Win32::Foundation::{HINSTANCE, HWND, POINT};
+    use windows::Win32::Foundation::{HINSTANCE, HWND, LPARAM, POINT, WPARAM};
     use windows::Win32::UI::Shell::{
         NIF_ICON, NIF_MESSAGE, NIF_SHOWTIP, NIF_TIP, NIM_ADD, NIM_DELETE, NIM_MODIFY,
         NIM_SETVERSION, NOTIFYICON_VERSION_4, NOTIFYICONDATAW, Shell_NotifyIconW,
@@ -203,8 +203,7 @@ pub(crate) mod windows_tray {
                 )
             };
             // SAFETY: Required after `TrackPopupMenuEx` per MSDN tray guidelines.
-            let _ =
-                unsafe { PostMessageW(self.hwnd, WM_NULL, Default::default(), Default::default()) };
+            let _ = unsafe { PostMessageW(self.hwnd, WM_NULL, WPARAM(0), LPARAM(0)) };
             // SAFETY: Always destroy transient `HMENU`.
             let _ = unsafe { DestroyMenu(menu) };
 

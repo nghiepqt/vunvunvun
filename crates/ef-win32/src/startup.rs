@@ -248,11 +248,10 @@ mod windows_impl {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(windows)))]
 mod tests {
     use super::*;
 
-    #[cfg(not(windows))]
     #[test]
     fn launch_at_login_defaults_disabled_and_toggles_cleanly() {
         assert_eq!(get_launch_at_login(false), LaunchAtLoginState::Disabled);
